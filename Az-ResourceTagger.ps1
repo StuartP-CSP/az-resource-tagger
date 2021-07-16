@@ -29,7 +29,7 @@ Write-Host -ForegroundColor Yellow  "   - Owner:" $Owner
 Write-Host -ForegroundColor Yellow  "   - Email:" $Email
 Write-Host -ForegroundColor Yellow  "   - Geo:" $Geo
 Write-Host 
-Write-Host -ForegroundColor Green   "If this is correct press Enter"
+Write-Host -ForegroundColor White   "If this is correct,"
 pause
 
 if ( Get-Module -ListAvailable -Name Az ) {
@@ -41,10 +41,26 @@ if ( Get-Module -ListAvailable -Name Az ) {
         Set-AzContext -Subscription $Subscription | Out-Null
     } else {
         Get-AzContext | Out-Null
-    }        
-    $Resources = Get-AzResource | Where-Object {$_.ResourceGroupName -eq $ResourceGroup}
+    }
+    $rg = Get-AzResourceGroup -Name $ResourceGroup    
+    # Tag the resource group itself
+    if ( $null -eq $rg.Tags ) {
+        Write-Host -ForegroundColor Green "Tags not set on Resource Group " $rg.ResourceGroupName ". Adding owner tags."
+        Set-AzResource -ResourceId $rg.ResourceId -Tag $Tag -Force | Out-Null
+    } else {
+        Write-Host -ForegroundColor Green "Tags already set on Resource Group " $ResourceGroup ". Merging owner tags."
+        $CombinedTag = @{}
+        # copy all keys and values from the current tags ($rg.Tags) Hashtable into $CombinedTag
+        $rg.Tags.Keys | ForEach-Object { $CombinedTag[$_] = $rg.Tags[$_] }
+        # make sure the value of the $rg.Tags hashtable is NOT overwritten (i.e. $rg.Tags value 'wins')
+        $tag.Keys | ForEach-Object { if (!($CombinedTag.ContainsKey($_))) { $CombinedTag[$_] = $Tag[$_] }}
+        Set-AzResource -ResourceId $rg.ResourceId -Tag $CombinedTag -Force | Out-Null        
+
+    }
+    # Tag all the resources within the resource group
+    $Resources = Get-AzResource | Where-Object {$_.ResourceGroupName -eq $rg.ResourceGroupName}
     foreach ( $Resource in $Resources ) {
-        if ( $Nul -eq $Resource.Tags ) {
+        if ( $null -eq $Resource.Tags ) {
             Write-Host "Tags not set. Adding owner tags to " -NoNewline
             Write-Host -ForegroundColor Yellow $Resource.ResourceName ...
             Set-AzResource -ResourceId $Resource.ResourceId -Tag $Tag -Force | Out-Null
