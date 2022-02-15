@@ -17,7 +17,7 @@ Install-Module -Name Az -AllowClobber -Scope CurrentUser
 Either specify the parameters on the command line or you will be prompted to enter them.
 
 ```
-Az-ResourceTagger -ResourceGroup xxxxx -Owner xxxxx -Email xxxx.xxxx@xxxx.com -Geo EMEA <-Subscription My-Azure-Subscription>
+Az-ResourceTagger -ResourceGroup xxxxx -Owner xxxxx -Email xxxx.xxxx@xxxx.com -Geo EMEA < -Subscription My-Azure-Subscription >
 ```
 
 ## Author
